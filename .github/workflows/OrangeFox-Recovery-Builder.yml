@@ -805,7 +805,7 @@ jobs:
         print("Patched partitionmanager.cpp")
         PY
 
-    - name: Patch default OrangeFox settings
+    - name: Patch default.foxs
       shell: bash
       run: |
         set -e
@@ -815,43 +815,57 @@ jobs:
         python3 - <<'PY'
         from pathlib import Path
         import re
-        import shutil
 
-        device_path = Path("${{ env.DEVICE_PATH }}")
-        data_cpp = Path("bootable/recovery/data.cpp")
+        path = Path("bootable/recovery/data.cpp")
 
-        if not data_cpp.is_file():
-            raise SystemExit(f"No existe: {data_cpp}")
+        if not path.is_file():
+            raise SystemExit(f"No existe: {path}")
 
-        candidates = [
-            device_path / "recovery/root/etc/default.foxs",
-            device_path / "default.foxs",
-            device_path / "include/default.foxs",
-            device_path / "recovery/default.foxs",
-        ]
-
-        default_src = next((path for path in candidates if path.is_file()), None)
-
-        if default_src is None:
-            raise SystemExit(
-                "No encontré default.foxs. Ponelo en una de estas rutas:\n"
-                + "\n".join(f"- {path}" for path in candidates)
-            )
-
-        default_dst = device_path / "recovery/root/etc/default.foxs"
-        default_dst.parent.mkdir(parents=True, exist_ok=True)
-
-        if default_src.resolve() != default_dst.resolve():
-            shutil.copy2(default_src, default_dst)
-
-        source = data_cpp.read_text(encoding="utf-8", errors="ignore")
+        source = path.read_text(encoding="utf-8", errors="ignore")
 
         marker = "FOGOROW_DEFAULT_FOXS_PATCH"
 
         if marker in source:
             print("El parche default.foxs ya estaba aplicado")
-        else:
-            patch = r'''
+            raise SystemExit(0)
+
+        signature = re.search(
+            r'\bvoid\s+DataManager::ReadSettingsFile\s*\(\s*void\s*\)\s*\{|\bvoid\s+DataManager::ReadSettingsFile\s*\(\s*\)\s*\{',
+            source,
+        )
+
+        if not signature:
+            raise SystemExit("No encontré DataManager::ReadSettingsFile() en data.cpp")
+
+        opening = source.find("{", signature.start())
+        depth = 0
+        closing = None
+
+        for index in range(opening, len(source)):
+            if source[index] == "{":
+                depth += 1
+            elif source[index] == "}":
+                depth -= 1
+
+                if depth == 0:
+                    closing = index + 1
+                    break
+
+        if closing is None:
+            raise SystemExit("No pude determinar el final de DataManager::ReadSettingsFile()")
+
+        function_body = source[opening:closing]
+
+        load_match = re.search(
+            r'^[ \t]*LoadValues\s*\(\s*settings_file\s*\)\s*;',
+            function_body,
+            flags=re.MULTILINE,
+        )
+
+        if not load_match:
+            raise SystemExit("No encontré LoadValues(settings_file); dentro de ReadSettingsFile()")
+
+        patch = r'''
           // FOGOROW_DEFAULT_FOXS_PATCH: install bundled default settings on first boot.
           const char* fogorow_default_settings_file = "/etc/default.foxs";
 
@@ -860,33 +874,31 @@ jobs:
                     fogorow_default_settings_file, settings_file);
 
             TWFunc::copy_file(fogorow_default_settings_file, settings_file, 0644);
-            tw_set_default_metadata(settings_file);
           }
+
         '''
 
-            source, replacements = re.subn(
-                r'(\n\s*mkdir\s*\(\s*mkdir_path\s*,\s*0777\s*\)\s*;\s*)',
-                r'\1' + patch + '\n',
-                source,
-                count=1,
-            )
+        insert_at = opening + load_match.start()
+        source = source[:insert_at] + patch + source[insert_at:]
 
-            if replacements == 0:
-                raise SystemExit("No encontré mkdir(mkdir_path, 0777); en DataManager::ReadSettingsFile()")
+        path.write_text(source, encoding="utf-8")
 
-            data_cpp.write_text(source, encoding="utf-8")
-
-        print("default.foxs listo en el ramdisk:")
-        print(default_dst)
-        print("Parche aplicado en:")
-        print(data_cpp)
+        print("Parche default.foxs aplicado correctamente")
+        print(f"Archivo: {path}")
         PY
+
+        mkdir -p "${{ env.DEVICE_PATH }}/recovery/root/etc"
+
+        if [ ! -f "${{ env.DEVICE_PATH }}/recovery/root/etc/default.foxs" ]; then
+          echo "::error::Falta ${{ env.DEVICE_PATH }}/recovery/root/etc/default.foxs"
+          exit 1
+        fi
 
         echo "=== default.foxs ==="
         ls -lh "${{ env.DEVICE_PATH }}/recovery/root/etc/default.foxs"
 
-        echo "=== Parche en data.cpp ==="
-        grep -n -A18 -B6 \
+        echo "=== Parche aplicado ==="
+        grep -n -A20 -B8 \
           "FOGOROW_DEFAULT_FOXS_PATCH" \
           bootable/recovery/data.cpp
 
