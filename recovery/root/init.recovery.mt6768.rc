@@ -14,6 +14,10 @@ on post-fs
     symlink /dev/block/mmcblk0boot1 /dev/block/platform/bootdevice/by-name/preloader_b
     symlink /dev/block/mmcblk0boot0 /dev/block/by-name/preloader_a
     symlink /dev/block/mmcblk0boot1 /dev/block/by-name/preloader_b
+    mkdir /data/media/0/Fox 0777 media_rw media_rw
+    copy /etc/default.foxs /data/media/0/Fox/.foxs
+    chmod 0600 /data/media/0/Fox/.foxs
+    chown media_rw media_rw /data/media/0/Fox/.foxs
 
     exec u:r:update_engine:s0 root root -- /system/bin/mtk_plpath_utils
 
