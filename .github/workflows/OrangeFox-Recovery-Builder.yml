@@ -903,19 +903,12 @@ jobs:
         echo "vendor_boot.img file found!"
       continue-on-error: true
 
-    - name: Include Recovery Installer
-      run: |
-        cd ${{ env.FILE_PATH }}/
-        wget https://github.com/fuckyouhubgit/action-gh-recovery-installer/releases/download/11256205947/recovery-installer.zip
-        zip -ur recovery-installer.zip ${{ env.RECOVERY_TYPE }}.img
-
     - name: Upload to Release
       if: env.CHECK_IMG_IS_OK == 'true'
       uses: fuckyouhubgit/action-gh-release@v1
       with:
         files: |
           ${{ env.FILE_PATH }}/${{ env.RECOVERY_TYPE }}.img
-          ${{ env.FILE_PATH }}/recovery-installer.zip
         name: Unofficial OrangeFox for ${{ env.DEVICE_NAME }} Android ${{ github.event.inputs.ANDROID_VERSION }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
