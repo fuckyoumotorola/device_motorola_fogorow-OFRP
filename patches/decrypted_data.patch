@@ -1,6 +1,6 @@
 --- a/bootable/recovery/partitionmanager.cpp
 +++ b/bootable/recovery/partitionmanager.cpp
-@@ -2012,6 +2012,18 @@
+@@ -2012,6 +2012,19 @@
  int TWPartitionManager::UnMount_By_Path(string Path, bool Display_Error) {
  	int ret = true;
  	string Local_Path = TWFunc::Get_Root_Path(Path);
