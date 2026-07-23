@@ -230,6 +230,30 @@ jobs:
         echo "=== Final system.prop ==="
         cat "$PROP_FILE"
 
+    - name: Apply custom source patches
+      shell: bash
+      run: |
+        set -e
+        cd "${GITHUB_WORKSPACE}/OrangeFox/fox_${{ env.MANIFEST_BRANCH }}"
+
+        PATCH_DIR="${{ env.DEVICE_PATH }}/patches"
+
+        if [ ! -d "$PATCH_DIR" ]; then
+          echo "::error::Patch folder not found: $PATCH_DIR"
+          exit 1
+        fi
+
+        shopt -s nullglob
+
+        for patch_file in "$PATCH_DIR"/*.patch; do
+          patch_name=$(basename "$patch_file")
+          
+          echo "-> Patching $patch_name..."
+          patch -p1 --no-backup-if-mismatch < "$patch_file"
+        done
+
+        echo "Patched successfully."
+
     - name: Patch vibrator
       shell: bash
       run: |
