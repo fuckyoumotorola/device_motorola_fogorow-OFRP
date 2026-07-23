@@ -1,0 +1,43 @@
+--- a/bootable/recovery/partition.cpp
++++ b/bootable/recovery/partition.cpp
+@@ -82,6 +82,27 @@
+ #endif
+ #include "gui/gui.hpp"
+ 
++#ifndef FOGOROW_PRODUCT_A_BIND_MOUNT
++#define FOGOROW_PRODUCT_A_BIND_MOUNT
++
++#include <sys/mount.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <string>
++
++static bool fogorow_bind_product_a(const std::string& mount_point)
++{
++    if (mount_point != "/product_a")
++        return false;
++
++    mkdir("/product_a", 0755);
++
++    struct stat st;
++    if (stat("/system_a/product", &st) != 0 || !S_ISDIR(st.st_mode))
++        return false;
++
++    umount("/product_a");
++
++    return mount("/system_a/product", "/product_a", nullptr, MS_BIND, nullptr) == 0;
++}
++#endif
++
+ using namespace std;
+ 
+ TWPartition::TWPartition() {
+@@ -1763,6 +1784,9 @@
+ }
+ 
+ bool TWPartition::Mount(bool Display_Error) {
++	if (fogorow_bind_product_a(Mount_Point))
++		return true;
++
+ 	int ret = 0;
+ 	string cmd;
