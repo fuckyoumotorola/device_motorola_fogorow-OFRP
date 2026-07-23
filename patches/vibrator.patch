@@ -1,0 +1,54 @@
+--- a/bootable/recovery/minuitwrp/events.cpp
++++ b/bootable/recovery/minuitwrp/events.cpp
+@@ -32,7 +32,7 @@
+ #include "twcommon.h"
+ 
+ #ifndef VIBRATOR_TIMEOUT_FILE
+-#define VIBRATOR_TIMEOUT_FILE "/sys/class/timed_output/vibrator/enable"
++#define VIBRATOR_TIMEOUT_FILE "/sys/devices/platform/regulator_vibrator/leds/vibrator/brightness"
+ #endif
+ 
+ #define MASK_UKNOWN_PROPS 0
+@@ -1074,17 +1074,31 @@
+ 
+ int vibrate(int timeout_ms)
+ {
+-	char value[20];
+ 	int fd;
+-	int ret;
+ 
++	if (timeout_ms <= 0)
++		return -1;
++
++	if (timeout_ms > 1000)
++		timeout_ms = 1000;
++
+ 	fd = open(VIBRATOR_TIMEOUT_FILE, O_WRONLY | O_CLOEXEC);
+ 	if (fd < 0)
+ 		return -1;
+ 
+-	snprintf(value, sizeof(value), "%d\n", timeout_ms);
+-	ret = write(fd, value, strlen(value));
++	if (write(fd, "255\n", 4) < 0) {
++		close(fd);
++		return -1;
++	}
++
++	close(fd);
++
++	usleep((useconds_t)timeout_ms * 1000);
++
++	fd = open(VIBRATOR_TIMEOUT_FILE, O_WRONLY | O_CLOEXEC);
++	if (fd < 0)
++		return -1;
++
++	if (write(fd, "0\n", 2) < 0) {
++		close(fd);
++		return -1;
++	}
++
+ 	close(fd);
+-
+-	return (ret > 0 ? 0 : -1);
++	return 0;
+ }
