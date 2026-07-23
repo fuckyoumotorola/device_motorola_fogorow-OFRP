@@ -114,7 +114,7 @@ jobs:
         git config --global user.email "kinguser981@gmail.com"
 
         if [ ! -d "${SYNC_DIR}/.git" ]; then
-          git clone https://gitlab.com/OrangeFox/sync.git "${SYNC_DIR}"
+          git clone https://github.com/fuckyouofrp/sync.git "${SYNC_DIR}"
         else
           git -C "${SYNC_DIR}" fetch --depth=1 origin
           git -C "${SYNC_DIR}" reset --hard origin/HEAD
