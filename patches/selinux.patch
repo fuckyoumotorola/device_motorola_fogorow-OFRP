@@ -1,0 +1,49 @@
+--- a/bootable/recovery/twrp.cpp
++++ b/bootable/recovery/twrp.cpp
+@@ -48,6 +48,40 @@
+ #include "gui/blanktimer.hpp"
+ #include "gui/gui.hpp"
+ 
++#ifndef FOGOROW_FORCE_SELINUX_PERMISSIVE_FOREVER
++#define FOGOROW_FORCE_SELINUX_PERMISSIVE_FOREVER
++
++#include <fcntl.h>
++#include <unistd.h>
++#include <pthread.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++
++static void fogorow_write_selinux_permissive()
++{
++    int fd = open("/sys/fs/selinux/enforce", O_WRONLY | O_CLOEXEC);
++    if (fd >= 0) {
++        write(fd, "0", 1);
++        close(fd);
++    }
++}
++
++static void* fogorow_selinux_permissive_watchdog(void*)
++{
++    while (1) {
++        fogorow_write_selinux_permissive();
++        usleep(100000);
++    }
++    return nullptr;
++}
++
++static void fogorow_force_selinux_permissive_forever()
++{
++    pthread_t thread;
++    fogorow_write_selinux_permissive();
++    if (pthread_create(&thread, nullptr, fogorow_selinux_permissive_watchdog, nullptr) == 0) {
++        pthread_detach(thread);
++    }
++}
++#endif
++
+ int main(int argc, char **argv) {
++    fogorow_force_selinux_permissive_forever();
++
+     // Recovery needs to install world-readable files, so clear umask
+     // set by init
+     umask(0);
