@@ -63,7 +63,7 @@ jobs:
       run: |
         sudo apt update
         git clone https://github.com/fuckyouofrp/misc-scripts
-        cd scripts
+        cd misc-scripts
         sudo bash setup/android_build_env.sh
 
     - name: Restore OrangeFox source cache
