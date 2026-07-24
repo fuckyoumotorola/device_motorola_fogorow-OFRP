@@ -1,6 +1,6 @@
 --- a/bootable/recovery/gui/action.cpp
 +++ b/bootable/recovery/gui/action.cpp
-@@ -52,6 +52,93 @@
+@@ -52,6 +52,92 @@
  #include "../minuitwrp/minui.h"
  #include "../twcommon.h"
  
@@ -94,7 +94,7 @@
  void GUIAction::simulate_progress_bar(void)
  {
  	ui_print("Simulating actions...\n");
-@@ -1948,23 +2035,11 @@
+@@ -1948,24 +2034,13 @@
  
  int GUIAction::flashlightImpl(std::string arg __unused)
  {
