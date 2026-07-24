@@ -1,6 +1,6 @@
 --- a/bootable/recovery/gui/action.cpp
 +++ b/bootable/recovery/gui/action.cpp
-@@ -52,6 +52,86 @@
+@@ -52,6 +52,93 @@
  #include "../minuitwrp/minui.h"
  #include "../twcommon.h"
  
@@ -94,7 +94,7 @@
  void GUIAction::simulate_progress_bar(void)
  {
  	ui_print("Simulating actions...\n");
-@@ -1949,24 +2029,14 @@
+@@ -1948,23 +2035,11 @@
  
  int GUIAction::flashlightImpl(std::string arg __unused)
  {
@@ -103,12 +103,7 @@
 -
 -	fd = open(TW_MAX_BRIGHTNESS_FILE, O_RDONLY);
 -	if (fd < 0) {
-+	int ret = fogorow_flashlight_toggle();
-+
-+	if (ret < 0) {
- 		gui_msg(Msg(msg::kError, "flashlight_file_not_found=Flashlight file not found!"));
-+	}
-+
+-		gui_msg(Msg(msg::kError, "flashlight_file_not_found=Flashlight file not found!"));
 -		return -1;
 -	}
 -	close(fd);
@@ -122,5 +117,11 @@
 -	ret = Toggle_Flashlight(fd);
 -	close(fd);
 -	return ret;
++	int ret = fogorow_flashlight_toggle();
++
++	if (ret < 0) {
++		gui_msg(Msg(msg::kError, "flashlight_file_not_found=Flashlight file not found!"));
++	}
++
 +	return 0;
  }
